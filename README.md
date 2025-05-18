@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+# 🗳️ Vote Sphere Visualizer
 
-## Project info
+A modern, interactive poll visualization app built with React, TypeScript, Vite, Supabase, and 3D pie chart visualizations using Three.js.
 
-**URL**: https://lovable.dev/projects/402f8c8c-dd57-44ce-928e-99538de5e9eb
+---
 
-## How can I edit this code?
+## ✨ Features
 
-There are several ways of editing your application.
+- 📝 **Create and manage polls** with multiple options
+- 🗳️ **Vote** on polls (authentication required)
+- 🔄 **Real-time updates** using Supabase subscriptions
+- 🥧 **3D Pie Chart Visualization** for poll results, with vibrant, distinct colors
+- 📱 **Responsive UI** with Tailwind CSS and shadcn-ui components
+- 🔗 **Shareable poll links** for easy distribution
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/402f8c8c-dd57-44ce-928e-99538de5e9eb) and start prompting.
+## 🗂️ Project Structure
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+vote-sphere-visualizer/
+├── public/                # 📁 Static assets (favicon, robots.txt, etc.)
+│   ├── favicon.ico
+│   ├── placeholder.svg
+│   └── robots.txt
+├── src/                   # 💻 Main source code
+│   ├── components/        # 🧩 Reusable UI components (PieChartVisualization, etc.)
+│   ├── context/           # 🌐 React context (e.g., AuthContext)
+│   ├── hooks/             # 🪝 Custom React hooks
+│   ├── integrations/      # 🔌 Supabase client setup
+│   ├── lib/               # 🛠️ Utility libraries
+│   ├── pages/             # 📄 Page components (Landing, Dashboard, ViewPoll, etc.)
+│   ├── types/             # 🏷️ TypeScript type definitions
+│   ├── App.tsx            # 🚀 Main app component
+│   ├── App.css            # 🎨 App-level styles
+│   ├── index.css          # 🎨 Global styles (Tailwind)
+│   └── main.tsx           # 🏁 App entry point
+├── supabase/              # 🗄️ Supabase configuration
+│   └── config.toml
+├── index.html             # 📝 Main HTML template
+├── tsconfig.json          # ⚙️ TypeScript config
+├── tsconfig.node.json     # ⚙️ Node-specific TypeScript config
+└── README.md              # 📘 Project documentation
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🚀 Getting Started
 
-**Use GitHub Codespaces**
+### 📋 Prerequisites
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- 🟢 **Node.js** (v16+ recommended)
+- 📦 **npm** (v8+ recommended)
+- 🟣 **Supabase** project (for backend)
 
-## What technologies are used for this project?
+### ⚡ Installation
 
-This project is built with:
+1. **Clone the repository:**
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd vote-sphere-visualizer
+   ```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+2. **Install dependencies:**
+   ```sh
+   npm install
+   ```
 
-## How can I deploy this project?
+3. **Configure Supabase:**
+   - 🔑 Update your Supabase credentials in the integration files under `src/integrations/supabase/`.
 
-Simply open [Lovable](https://lovable.dev/projects/402f8c8c-dd57-44ce-928e-99538de5e9eb) and click on Share -> Publish.
+4. **Start the development server:**
+   ```sh
+   npm run dev
+   ```
+   The app will be available at [http://localhost:5173](http://localhost:5173) (or as indicated in your terminal).
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 🧑‍💻 Usage
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- ➕ **Create a poll:** Go to the dashboard and click "Create Poll".
+- 🗳️ **Vote:** Select an option and submit your vote (sign in required).
+- 🥧 **View results:** After voting, see a 3D pie chart with real-time updates.
+- 🔗 **Share:** Use the "Share Poll" button to copy the poll link.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## 🛠️ Technologies Used
+
+- ⚛️ **React** & **TypeScript**
+- ⚡ **Vite** (for fast development)
+- 🟣 **Supabase** (database, auth, real-time)
+- 🧩 **Three.js** (`@react-three/fiber`, `@react-three/drei`) for 3D charts
+- 🎨 **Tailwind CSS** & **shadcn-ui** for styling
+
+---
+
+## 🎨 Customization
+
+- **Colors:** Pie chart colors can be customized in `src/components/PieChartVisualization.tsx` via the `COLORS` array.
+- **Styling:** Modify `index.css` or `App.css` for global styles.
+
+---
+
+## 🚢 Deployment
+
+You can deploy this app using any static hosting provider (Vercel, Netlify, etc.) or via [Lovable](https://lovable.dev/).
+
+---
+
+## 📄 License
+
+This project is for educational and demonstration purposes.
+
+---
+
+## 🙏 Credits
+
+- Built with [Lovable](https://lovable.dev/)
+- 3D visualization powered by [Three.js](https://threejs.org/) and [react-three-fiber](https://docs.pmnd.rs/react-three-fiber/getting-started/introduction)
+- UI by [shadcn-ui](https://ui.shadcn.com/) and [Tailwind CSS](https://tailwindcss.com/)
+
+---
+
+**Happy polling! 🥳**
