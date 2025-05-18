@@ -133,6 +133,16 @@ const ViewPoll = () => {
   const handleSubmitVote = async () => {
     if (selectedOption === null || !poll || !id) return;
     
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to vote on this poll.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+      return;
+    }
+    
     setVotingInProgress(true);
     
     try {
@@ -255,7 +265,7 @@ const ViewPoll = () => {
               disabled={selectedOption === null || votingInProgress}
               className="bg-purple-600 hover:bg-purple-700"
             >
-              {votingInProgress ? "Submitting..." : "Submit Vote"}
+              {votingInProgress ? "Submitting..." : user ? "Submit Vote" : "Sign in to Vote"}
             </Button>
           )}
         </CardFooter>

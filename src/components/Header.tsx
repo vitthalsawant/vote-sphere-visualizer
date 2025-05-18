@@ -5,11 +5,43 @@ import { useAuth } from "@/context/AuthContext";
 import { BarChartHorizontal, LogOut, PlusCircle, User } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const { isAuthenticated, signOut, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('id', user.id)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching user profile:', error);
+            return;
+          }
+          
+          if (data?.username) {
+            setUsername(data.username);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+    };
+    
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, user]);
 
   const handleSignOut = async () => {
     try {
@@ -49,7 +81,7 @@ const Header = () => {
                 </Button>
                 <div className="flex items-center gap-3">
                   <div className="hidden md:block text-sm">
-                    {user?.email}
+                    {username || 'User'}
                   </div>
                   <Button variant="ghost" size="icon" title="Sign Out" onClick={handleSignOut}>
                     <LogOut className="h-5 w-5" />
