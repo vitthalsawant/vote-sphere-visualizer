@@ -3,24 +3,24 @@ import { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { Poll } from "@/types/poll";
-import * as THREE from 'three'; // Add THREE import
+import * as THREE from 'three';
 
 interface PieChartVisualizationProps {
   poll: Poll;
 }
 
-// Colors for the pie chart segments
+// Colors for the pie chart segments - updated with brighter, more distinct colors
 const COLORS = [
-  '#8B5CF6', // Purple (primary)
-  '#3B82F6', // Blue 
-  '#2DD4BF', // Teal
-  '#F59E0B', // Amber
-  '#EC4899', // Pink
-  '#10B981', // Emerald
   '#6366F1', // Indigo
+  '#3B82F6', // Blue
+  '#06B6D4', // Cyan
+  '#10B981', // Emerald
+  '#84CC16', // Lime
+  '#EAB308', // Yellow
   '#F97316', // Orange
-  '#14B8A6', // Teal
-  '#8B5CF6', // Purple (repeat if needed)
+  '#EC4899', // Pink
+  '#8B5CF6', // Purple
+  '#D946EF', // Fuchsia
 ];
 
 const PieChartSegment = ({ 
@@ -99,7 +99,7 @@ const PieChartSegment = ({
           Math.sin(startAngle + (endAngle - startAngle) / 2) * 0.7,
           0.1
         ]}>
-          <div className="bg-white p-2 rounded shadow-lg text-sm whitespace-nowrap">
+          <div className="bg-white p-2 rounded shadow-lg text-sm whitespace-nowrap border border-indigo-100">
             <div><strong>{label}</strong></div>
             <div>{votes} votes ({percentage}%)</div>
           </div>
