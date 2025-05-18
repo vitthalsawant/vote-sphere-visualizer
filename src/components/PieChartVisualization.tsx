@@ -1,4 +1,3 @@
-
 import { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
@@ -9,18 +8,18 @@ interface PieChartVisualizationProps {
   poll: Poll;
 }
 
-// Colors for the pie chart segments - updated with brighter, more distinct colors
+// Bright and vibrant colors for the pie chart segments
 const COLORS = [
-  '#6366F1', // Indigo
-  '#3B82F6', // Blue
-  '#06B6D4', // Cyan
-  '#10B981', // Emerald
-  '#84CC16', // Lime
-  '#EAB308', // Yellow
-  '#F97316', // Orange
-  '#EC4899', // Pink
-  '#8B5CF6', // Purple
-  '#D946EF', // Fuchsia
+  '#FF0000', // Bright Red
+  '#00FF00', // Bright Green
+  '#0000FF', // Bright Blue
+  '#FFFF00', // Bright Yellow
+  '#FF00FF', // Bright Magenta
+  '#00FFFF', // Bright Cyan
+  '#FF8000', // Bright Orange
+  '#8000FF', // Bright Purple
+  '#00FF80', // Bright Mint
+  '#FF0080', // Bright Pink
 ];
 
 const PieChartSegment = ({ 
@@ -44,7 +43,6 @@ const PieChartSegment = ({
   hovered: number | null,
   setHovered: (index: number | null) => void
 }) => {
-  // Create the pie segment geometry
   const segments = 32;
   const vertices = [];
   
@@ -67,7 +65,10 @@ const PieChartSegment = ({
   
   // Make the hovered segment pop out
   const isHovered = hovered === index;
-  const zOffset = isHovered ? 0.1 : 0;
+  const zOffset = isHovered ? 0.2 : 0;
+  
+  // Don't render if percentage is 0
+  if (percentage === 0) return null;
   
   return (
     <group position={[0, 0, zOffset]}>
@@ -89,10 +90,9 @@ const PieChartSegment = ({
             itemSize={1} 
           />
         </bufferGeometry>
-        <meshStandardMaterial color={color} />
+        <meshBasicMaterial color={color} />
       </mesh>
       
-      {/* Show label when segment is hovered */}
       {isHovered && (
         <Html position={[
           Math.cos(startAngle + (endAngle - startAngle) / 2) * 0.7,
@@ -113,17 +113,14 @@ const PieChart3D = ({ poll }: { poll: Poll }) => {
   const [hovered, setHovered] = useState<number | null>(null);
   const groupRef = useRef<THREE.Group>(null);
   
-  // Calculate total votes and percentages
   const totalVotes = Object.values(poll.votes || {}).reduce((sum, count) => sum + count, 0);
   
-  // Create segments data
   const segments = poll.options.map((option, index) => {
     const votes = poll.votes?.[index] || 0;
     const percentage = totalVotes > 0 ? Math.round((votes * 100) / totalVotes) : 0;
     return { option, votes, percentage };
   });
   
-  // Calculate angles for each segment
   let currentAngle = 0;
   const segmentsWithAngles = segments.map((segment, index) => {
     const startAngle = currentAngle;
@@ -142,9 +139,7 @@ const PieChart3D = ({ poll }: { poll: Poll }) => {
   
   return (
     <group ref={groupRef} rotation={[0, 0, 0]}>
-      {/* Add slight tilt to the pie chart */}
       <group rotation={[-Math.PI / 6, 0, 0]}>
-        {/* Render each pie segment */}
         {segmentsWithAngles.map((segment) => (
           <PieChartSegment
             key={segment.index}
@@ -161,7 +156,6 @@ const PieChart3D = ({ poll }: { poll: Poll }) => {
         ))}
       </group>
       
-      {/* Chart title */}
       <Html position={[0, 1.5, 0]}>
         <div className="text-center">
           <h3 className="font-semibold text-gray-800">Results Visualization</h3>
@@ -175,8 +169,9 @@ const PieChart3D = ({ poll }: { poll: Poll }) => {
 const PieChartVisualization = ({ poll }: PieChartVisualizationProps) => {
   return (
     <Canvas camera={{ position: [0, 0, 3], fov: 60 }}>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} intensity={1} />
+      <ambientLight intensity={0.8} />
+      <pointLight position={[10, 10, 10]} intensity={1.5} />
+      <pointLight position={[-10, -10, -10]} intensity={0.5} />
       <PieChart3D poll={poll} />
       <OrbitControls 
         enableZoom={true}
