@@ -5,4 +5,5 @@ export interface Poll {
   options: string[];
   votes?: Record<number, number>;
   createdAt: string;
+  user_id?: string;
 }

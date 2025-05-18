@@ -7,7 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Poll } from "@/types/poll";
 import PieChartVisualization from "@/components/PieChartVisualization";
 
@@ -15,62 +16,153 @@ const ViewPoll = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [polls, setPolls] = useLocalStorage<Poll[]>("polls", []);
+  const { user } = useAuth();
   const [poll, setPoll] = useState<Poll | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [voteCount, setVoteCount] = useState(0);
-  const [votedIds, setVotedIds] = useLocalStorage<string[]>("votedPolls", []);
+  const [votingInProgress, setVotingInProgress] = useState(false);
 
+  // Set up realtime subscription for votes
   useEffect(() => {
-    if (id) {
-      const foundPoll = polls.find(p => p.id === id);
-      if (foundPoll) {
-        setPoll(foundPoll);
+    if (!id) return;
+    
+    const channel = supabase
+      .channel('public:votes')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'votes', filter: `poll_id=eq.${id}` },
+        (payload) => {
+          // Update the poll votes when a new vote comes in
+          if (poll && poll.votes) {
+            const newVotes = { ...poll.votes };
+            const optionIndex = payload.new.option_index;
+            newVotes[optionIndex] = (newVotes[optionIndex] || 0) + 1;
+            
+            setPoll({
+              ...poll,
+              votes: newVotes
+            });
+            
+            setVoteCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, poll]);
+
+  // Fetch poll data
+  useEffect(() => {
+    const fetchPoll = async () => {
+      if (!id) return;
+      
+      try {
+        setLoading(true);
         
-        // Calculate total votes
-        const totalVotes = foundPoll.votes 
-          ? Object.values(foundPoll.votes).reduce((sum, count) => sum + count, 0) 
-          : 0;
+        // Fetch poll data
+        const { data: pollData, error: pollError } = await supabase
+          .from('polls')
+          .select('id, question, options, created_at')
+          .eq('id', id)
+          .single();
+          
+        if (pollError) throw pollError;
         
-        setVoteCount(totalVotes);
+        // Fetch votes for this poll
+        const { data: votesData, error: votesError } = await supabase
+          .from('votes')
+          .select('option_index')
+          .eq('poll_id', id);
+          
+        if (votesError) throw votesError;
         
         // Check if user has already voted
-        setHasVoted(votedIds.includes(id));
-      }
-      setLoading(false);
-    }
-  }, [id, polls, votedIds]);
-
-  const handleSubmitVote = () => {
-    if (selectedOption === null || !poll) return;
-
-    // Update votes in the poll
-    const updatedPoll = { 
-      ...poll,
-      votes: { 
-        ...poll.votes,
-        [selectedOption]: (poll.votes?.[selectedOption] || 0) + 1
+        let userVoted = false;
+        if (user) {
+          const { data: userVote } = await supabase
+            .from('votes')
+            .select('id')
+            .eq('poll_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+            
+          userVoted = !!userVote;
+        }
+        
+        // Count votes for each option
+        const votes: Record<number, number> = {};
+        pollData.options.forEach((_: string, index: number) => {
+          votes[index] = votesData.filter(v => v.option_index === index).length;
+        });
+        
+        // Set poll data
+        setPoll({
+          id: pollData.id,
+          question: pollData.question,
+          options: pollData.options,
+          votes,
+          createdAt: pollData.created_at
+        });
+        
+        // Calculate total votes
+        setVoteCount(votesData.length);
+        setHasVoted(userVoted);
+        
+      } catch (error: any) {
+        console.error('Error fetching poll:', error);
+        toast({
+          title: "Error loading poll",
+          description: error.message || "There was a problem loading this poll.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
-
-    // Update poll in storage
-    const updatedPolls = polls.map(p => p.id === poll.id ? updatedPoll : p);
-    setPolls(updatedPolls);
     
-    // Save that the user has voted on this poll
-    setVotedIds([...votedIds, poll.id]);
-    
-    // Update local state
-    setPoll(updatedPoll);
-    setHasVoted(true);
-    setVoteCount(voteCount + 1);
+    fetchPoll();
+  }, [id, user, toast]);
 
-    toast({
-      title: "Vote submitted!",
-      description: "Thank you for participating in this poll.",
-    });
+  const handleSubmitVote = async () => {
+    if (selectedOption === null || !poll || !id) return;
+    
+    setVotingInProgress(true);
+    
+    try {
+      // Insert vote in Supabase
+      const { error } = await supabase
+        .from('votes')
+        .insert({ 
+          poll_id: id,
+          option_index: selectedOption,
+          user_id: user?.id || null
+        });
+        
+      if (error) throw error;
+      
+      // Update local state (this will be refreshed by the realtime subscription)
+      setHasVoted(true);
+      
+      toast({
+        title: "Vote submitted!",
+        description: "Thank you for participating in this poll.",
+      });
+      
+    } catch (error: any) {
+      console.error('Error submitting vote:', error);
+      toast({
+        title: "Error submitting vote",
+        description: error.message || "There was a problem submitting your vote.",
+        variant: "destructive",
+      });
+    } finally {
+      setVotingInProgress(false);
+    }
   };
 
   const handleSharePoll = () => {
@@ -84,7 +176,8 @@ const ViewPoll = () => {
   if (loading) {
     return (
       <div className="container mx-auto max-w-2xl px-4 py-8 text-center">
-        Loading poll...
+        <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p>Loading poll...</p>
       </div>
     );
   }
@@ -157,10 +250,10 @@ const ViewPoll = () => {
           {!hasVoted && (
             <Button 
               onClick={handleSubmitVote} 
-              disabled={selectedOption === null}
+              disabled={selectedOption === null || votingInProgress}
               className="bg-purple-600 hover:bg-purple-700"
             >
-              Submit Vote
+              {votingInProgress ? "Submitting..." : "Submit Vote"}
             </Button>
           )}
         </CardFooter>

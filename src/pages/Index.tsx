@@ -4,13 +4,70 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useToast } from "@/hooks/use-toast";
 import { Poll } from "@/types/poll";
 import PollPreview from "@/components/PollPreview";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
-  const [polls, setPolls] = useLocalStorage<Poll[]>("polls", []);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [expandedPoll, setExpandedPoll] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Fetch polls from Supabase
+  useEffect(() => {
+    const fetchPolls = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('polls')
+          .select(`
+            id, 
+            question, 
+            options, 
+            created_at,
+            votes(option_index)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        // Process the data to match our Poll type
+        const processedPolls = data.map(poll => {
+          // Count votes for each option
+          const votes: Record<number, number> = {};
+          poll.options.forEach((_: string, index: number) => {
+            votes[index] = poll.votes.filter((v: any) => v.option_index === index).length;
+          });
+
+          return {
+            id: poll.id,
+            question: poll.question,
+            options: poll.options,
+            votes,
+            createdAt: poll.created_at
+          };
+        });
+
+        setPolls(processedPolls);
+      } catch (error: any) {
+        toast({
+          title: "Error fetching polls",
+          description: error.message || "Could not fetch polls",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPolls();
+  }, [toast]);
 
   const toggleExpand = (id: string) => {
     setExpandedPoll(expandedPoll === id ? null : id);
@@ -34,7 +91,12 @@ const Index = () => {
         </Button>
       </div>
 
-      {polls.length > 0 ? (
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="animate-spin h-8 w-8 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-gray-500">Loading polls...</p>
+        </div>
+      ) : polls.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {polls.map((poll) => (
             <Card 

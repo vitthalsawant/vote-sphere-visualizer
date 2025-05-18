@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,16 +8,28 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { X, Plus, ArrowLeft } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useToast } from "@/hooks/use-toast";
-import { useLocalStorage } from "@/hooks/use-local-storage";
-import { Poll } from "@/types/poll";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const CreatePoll = () => {
   const navigate = useNavigate();
-  const [polls, setPolls] = useLocalStorage<Poll[]>("polls", []);
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create a poll.",
+        variant: "destructive",
+      });
+      navigate("/auth");
+    }
+  }, [isAuthenticated, navigate, toast]);
 
   const handleAddOption = () => {
     if (options.length < 10) {
@@ -51,7 +63,7 @@ const CreatePoll = () => {
     setOptions(newOptions);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate form
     if (!question.trim()) {
       toast({
@@ -74,28 +86,38 @@ const CreatePoll = () => {
 
     setIsSubmitting(true);
 
-    // Create new poll
-    const newPoll: Poll = {
-      id: nanoid(8),
-      question: question.trim(),
-      options: filteredOptions,
-      votes: filteredOptions.reduce((acc, _, index) => {
-        acc[index] = 0;
-        return acc;
-      }, {} as Record<number, number>),
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      // Create new poll in Supabase
+      const { data: poll, error } = await supabase
+        .from('polls')
+        .insert({
+          question: question.trim(),
+          options: filteredOptions,
+          user_id: user?.id,
+          is_public: true,
+        })
+        .select()
+        .single();
 
-    // Save poll
-    setPolls([newPoll, ...polls]);
-    
-    toast({
-      title: "Poll created!",
-      description: "Your poll has been created successfully.",
-    });
+      if (error) {
+        throw error;
+      }
 
-    // Redirect to the new poll
-    navigate(`/poll/${newPoll.id}`);
+      toast({
+        title: "Poll created!",
+        description: "Your poll has been created successfully.",
+      });
+
+      // Redirect to the new poll
+      navigate(`/poll/${poll.id}`);
+    } catch (error: any) {
+      toast({
+        title: "Error creating poll",
+        description: error.message || "There was a problem creating your poll.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -160,7 +182,7 @@ const CreatePoll = () => {
             disabled={isSubmitting}
             className="bg-purple-600 hover:bg-purple-700"
           >
-            Create Poll
+            {isSubmitting ? "Creating..." : "Create Poll"}
           </Button>
         </CardFooter>
       </Card>
