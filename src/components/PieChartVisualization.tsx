@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import { Poll } from "@/types/poll";
+import * as THREE from 'three'; // Add THREE import
 
 interface PieChartVisualizationProps {
   poll: Poll;
