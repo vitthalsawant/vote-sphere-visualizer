@@ -9,7 +9,7 @@ import { ArrowLeft, Share } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Poll } from "@/types/poll";
+import { Poll, parseOptions } from "@/types/poll";
 import PieChartVisualization from "@/components/PieChartVisualization";
 
 const ViewPoll = () => {
@@ -94,9 +94,11 @@ const ViewPoll = () => {
           userVoted = !!userVote;
         }
         
+        const parsedOptions = parseOptions(pollData.options);
+        
         // Count votes for each option
         const votes: Record<number, number> = {};
-        pollData.options.forEach((_: string, index: number) => {
+        parsedOptions.forEach((_: string, index: number) => {
           votes[index] = votesData.filter(v => v.option_index === index).length;
         });
         
@@ -104,7 +106,7 @@ const ViewPoll = () => {
         setPoll({
           id: pollData.id,
           question: pollData.question,
-          options: pollData.options,
+          options: parsedOptions,
           votes,
           createdAt: pollData.created_at
         });

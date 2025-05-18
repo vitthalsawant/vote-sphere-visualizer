@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Poll } from "@/types/poll";
+import { Poll, parseOptions } from "@/types/poll";
 import PollPreview from "@/components/PollPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
@@ -41,14 +41,16 @@ const Index = () => {
         const processedPolls = data.map(poll => {
           // Count votes for each option
           const votes: Record<number, number> = {};
-          poll.options.forEach((_: string, index: number) => {
+          const parsedOptions = parseOptions(poll.options);
+          
+          parsedOptions.forEach((_: string, index: number) => {
             votes[index] = poll.votes.filter((v: any) => v.option_index === index).length;
           });
 
           return {
             id: poll.id,
             question: poll.question,
-            options: poll.options,
+            options: parsedOptions,
             votes,
             createdAt: poll.created_at
           };
